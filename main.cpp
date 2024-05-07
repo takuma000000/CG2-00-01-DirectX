@@ -101,6 +101,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 #pragma endregion
 
+#ifdef _DEBUG
+
+	ID3D12Debug1* debugController = nullptr;
+	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
+		//デバッグレイヤーを有効化する
+		debugController->EnableDebugLayer();
+		//さらにGPU側でもチェックを行うようにする
+		debugController->SetEnableGPUBasedValidation(TRUE);
+	}
+
+#endif
+
 #pragma region ファクトリーの生成
 	//DXGIファクトリーの生成
 	IDXGIFactory7* dxgiFactory = nullptr;
@@ -163,6 +175,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Log("Complet create D3D12Device!!!\n");
 
 #pragma endregion
+
+#ifdef _DEBUG
+
+	ID3D12InfoQueue* infoQueue = nullptr;
+	if (SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
+		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
+		D3D12_MESSAGE_ID denyIds[] = { D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE };
+		D3D12_MESSAGE_SEVERITY severities[] = { D3D12_MESSAGE_SEVERITY_INFO };
+		D3D12_INFO_QUEUE_FILTER filter{};
+		filter.DenyList.NumIDs = _countof(denyIds);
+		filter.DenyList.pIDList = denyIds;
+		filter.DenyList.NumSeverities = _countof(severities);
+		filter.DenyList.pSeverityList = severities;
+		infoQueue->PushStorageFilter(&filter);
+		infoQueue->Release();
+	}
+
+#endif
 
 #pragma region CommandQueue
 	//コマンドキューを生成する
@@ -247,9 +279,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	rtvHandles[0] = rtvStartHandle;
 	device->CreateRenderTargetView(swapChainResource[0], &rtvDesc, rtvHandles[0]);
 	//2つ目のディスクリプタハンドルを得る( 自力で )
-	rtvHandles[1].ptr = rtvHandles[0].ptr, +device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	rtvHandles[1].ptr = rtvHandles[0].ptr +device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	//2つ目を作る
 	device->CreateRenderTargetView(swapChainResource[1], &rtvDesc, rtvHandles[1]);
+
+
+
+
+	ID3D12Fence* fence = nullptr;
+	uint64_t fenceValue = 0;
+	hr = device->CreateFence(fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+	assert(SUCCEEDED(hr));
+
+	HANDLE fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	assert(fenceEvent != nullptr);
+
+
+
 
 	//出力ウィンドウへの文字出力ループを抜ける
 	Log("Hello,DirectX!\n");
@@ -266,11 +312,32 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 			//これから書き込むバックバッファのインデックスを取得	
 			UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
+
+			//TransitionBarrierの設定
+			D3D12_RESOURCE_BARRIER barrier{};
+			//今回のバリアはTransition
+			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+			//Noneにしておく
+			barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+			//バリアを張る対象のリソース。現在のバックバッファに対して行う
+			barrier.Transition.pResource = swapChainResource[backBufferIndex];
+			//遷移前( 現在 )のResourceState
+			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+			//遷移後のResourceState
+			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+			//TransitionBarrierを張る
+			commandList->ResourceBarrier(1, &barrier);
+
 			//描画先のRTVを設定する
 			commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, nullptr);
 			//指定した色で画面全体をクリアする
 			float clearColor[] = { 0.1f,0.25f,0.5f,1.0f };
-			commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);	
+			commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
+
+			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+			commandList->ResourceBarrier(1, &barrier);
+
 			//コマンドリストの内容を確定させる。全てのコマンドを積んでからCloseすること
 			hr = commandList->Close();
 			assert(SUCCEEDED(hr));
@@ -278,6 +345,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			ID3D12CommandList* commandLists[] = { commandList };
 			commandQueue->ExecuteCommandLists(1, commandLists);
 			swapChain->Present(1, 0);
+
+
+
+
+			fenceValue++;
+			commandQueue->Signal(fence, fenceValue);
+
+			if (fence->GetCompletedValue() < fenceValue) {
+				fence->SetEventOnCompletion(fenceValue, fenceEvent);
+				WaitForSingleObject(fenceEvent, INFINITE);
+			}
+
+
+
+
 			hr = commandAllocator->Reset();
 			assert(SUCCEEDED(hr));
 			hr = commandList->Reset(commandAllocator, nullptr);
