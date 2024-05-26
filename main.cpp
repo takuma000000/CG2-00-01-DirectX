@@ -939,6 +939,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	}//ゲームループ終わり
 
 	
+	//ImGuiの終了処理
+	ImGui_ImplDX12_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+
 	
 	srvDescriptorHeap->Release();
 	wvpResource->Release();
@@ -978,11 +983,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		debug->Release();
 
 	}
-
-	//ImGuiの終了処理
-	ImGui_ImplDX12_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
 
 	return 0;
 
