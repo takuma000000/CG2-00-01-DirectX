@@ -903,9 +903,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			commandQueue->ExecuteCommandLists(1, commandLists);
 			swapChain->Present(1, 0);
 
-
-
-
 			fenceValue++;
 			commandQueue->Signal(fence, fenceValue);
 
@@ -941,10 +938,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	}//ゲームループ終わり
 
-
 	
-
 	
+	srvDescriptorHeap->Release();
 	wvpResource->Release();
 	materialResource->Release();
 	vertexResource->Release();
