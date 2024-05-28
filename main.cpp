@@ -443,6 +443,9 @@ Transform cameraTransform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f} ,{0.0f,0.0f,-25.0f}
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
+	
+
+
 #pragma region Windowの生成
 	WNDCLASS wc{};
 	//ウィンドウプロシージャ
@@ -818,11 +821,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart()
 	);
 
-
-
 	
-
-
 	MSG msg{};
 	//ウィンドウの×ボタンが押されるまでループ
 	while (msg.message != WM_QUIT) {
@@ -937,6 +936,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 
 	}//ゲームループ終わり
+
+	
 
 	
 	//ImGuiの終了処理
