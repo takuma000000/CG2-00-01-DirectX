@@ -437,6 +437,8 @@ ID3D12DescriptorHeap* CreateDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTO
 	return descriptorHeap;
 }
 
+float inputFloat3[3] = { 0,0,0 };
+
 //Transform変数を作る
 Transform transform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 Transform cameraTransform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f} ,{0.0f,0.0f,-25.0f} };
