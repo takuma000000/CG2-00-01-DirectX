@@ -439,6 +439,11 @@ ID3D12DescriptorHeap* CreateDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTO
 
 float inputFloat3[3] = { 0,0,0 };
 
+//Vector4 materialData(1.0f, 1.0f, 0.0f, 1.0f);
+
+
+
+
 //Transform変数を作る
 Transform transform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 Transform cameraTransform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f} ,{0.0f,0.0f,-5.0f} };
@@ -838,11 +843,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			ImGui::NewFrame();
 
 			
+
 			//色を変えるImGuiの処理
-			ImGui::Begin("color Window");
-			ImGui::DragFloat3("color", &materialData->x, 0.01f);
+			ImGui::Begin("Color Window");
+			// ColorEdit4を使用して色を選択
+			ImGui::ColorEdit4("Color", &materialData->x);
 			ImGui::End();
-			
+		
 
 			//開発用UIの処理。実際に開発用のUIを出す場合はここをゲーム固有の処理に置き換える
 			ImGui::ShowDemoWindow();
