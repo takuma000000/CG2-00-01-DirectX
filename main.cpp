@@ -837,9 +837,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
 
-			//色を変えようとしてる
-			//ImGui::InputFloat3("color",)
-
+			
+			//色を変えるImGuiの処理
 			ImGui::Begin("color Window");
 			ImGui::DragFloat3("color", &materialData->x, 0.01f);
 			ImGui::End();
