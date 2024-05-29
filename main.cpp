@@ -847,7 +847,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//色を変えるImGuiの処理
 			ImGui::Begin("Color Window");
 			// ColorEdit4を使用して色を選択
-			ImGui::ColorEdit4("Color", &materialData->x);
+			ImGui::ColorEdit3("Color", &materialData->x);
 			ImGui::End();
 		
 
