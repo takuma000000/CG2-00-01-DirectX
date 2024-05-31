@@ -842,17 +842,30 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
 
-			
+
+
+			//*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
 
 			//色を変えるImGuiの処理
-			ImGui::Begin("Color Window");
+			ImGui::Begin("Color");
 			// ColorEdit4を使用して色を選択
 			ImGui::ColorEdit3("Color", &materialData->x);
 			ImGui::End();
-		
+
+
+			//三角形を動かすImGuiの処理
+			ImGui::Begin("Transform");
+			ImGui::SliderFloat3("Scale", &transform.scale.x, -1.0f, 1.0f);
+			ImGui::SliderFloat3("Rotate", &transform.rotate.x, -1.0f, 1.0f);
+			ImGui::SliderFloat3("Translate", &transform.translate.x, -1.0f, 1.0f);
+			ImGui::End();
+			
+			//*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+
+
 
 			//開発用UIの処理。実際に開発用のUIを出す場合はここをゲーム固有の処理に置き換える
-			ImGui::ShowDemoWindow();
+			//ImGui::ShowDemoWindow();
 			
 
 
