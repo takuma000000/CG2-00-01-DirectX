@@ -56,6 +56,8 @@ struct VertexData {
 	Vector2 texcoord;
 };
 
+
+
 Matrix4x4 Inverse(const Matrix4x4& m) {
 	Matrix4x4 result;
 
@@ -100,21 +102,6 @@ Matrix4x4 Inverse(const Matrix4x4& m) {
 
 	return result;
 }
-
-//Vector3 Transform(const Vector3& vector, const Matrix4x4& matrix) {
-//	Vector3 result;
-//
-//	result.x = vector.x * matrix.m[0][0] + vector.y * matrix.m[1][0] + vector.z * matrix.m[2][0] + matrix.m[3][0];
-//	result.y = vector.x * matrix.m[0][1] + vector.y * matrix.m[1][1] + vector.z * matrix.m[2][1] + matrix.m[3][1];
-//	result.z = vector.x * matrix.m[0][2] + vector.y * matrix.m[1][2] + vector.z * matrix.m[2][2] + matrix.m[3][2];
-//	float w = vector.x * matrix.m[0][3] + vector.y * matrix.m[1][3] + vector.z * matrix.m[2][3] + 1.0f * matrix.m[3][3];
-//	//assert(w != 0.0f);
-//	result.x /= w;
-//	result.y /= w;
-//	result.z /= w;
-//
-//	return result;
-//}
 
 Matrix4x4 Multiply(const Matrix4x4& m1, const Matrix4x4& m2) {
 	Matrix4x4 result;
@@ -1127,7 +1114,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 			//色を変えるImGuiの処理
 			ImGui::Begin("Setting");
-			// ColorEdit4を使用して色を選択
+			// ColorEdit3を使用して色を選択
 			ImGui::ColorEdit3("Color", &materialData->x);
 			ImGui::End();
 			//開発用UIの処理。実際に開発用のUIを出す場合はここをゲーム固有の処理に置き換える
