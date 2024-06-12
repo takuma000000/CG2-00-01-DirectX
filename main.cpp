@@ -903,7 +903,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
 	D3D12_RASTERIZER_DESC resterizerDesc{};
-	resterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	resterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 	resterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	IDxcBlob* vertexShaderBlob = CompileShader(L"Object3D.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includeHnadler);
@@ -1227,7 +1227,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			assert(SUCCEEDED(hr));
 
 			//三角形を動かす処理
-			transform.rotate.y += 0.005f;
+			transform.rotate.y += 0.01f;
 			Matrix4x4 worldMatrix = MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
 			*wvpData = worldMatrix;
 
