@@ -56,7 +56,10 @@ struct VertexData {
 	Vector2 texcoord;
 };
 
-
+struct Sphere {
+	Vector3 center;
+	float radius;
+};
 
 Matrix4x4 Inverse(const Matrix4x4& m) {
 	Matrix4x4 result;
@@ -325,6 +328,10 @@ Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, float botto
 	mat.m[3][3] = 1.0f;
 
 	return mat;
+}
+
+void DrawSurfaceSphere(const Sphere* sphere, Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, int color) {
+
 }
 
 //ウィンドウプロシージャ
