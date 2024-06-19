@@ -331,7 +331,24 @@ Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, float botto
 }
 
 void DrawSurfaceSphere(const Sphere* sphere, Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, int color) {
+	const uint32_t kSubdivisiont = 16;  // 分割数
 
+	const float kLonEvery = 2.0f * float(M_PI) / kSubdivisiont;  // 経度分割1つ分の角度
+	const float kLatEvery = float(M_PI) / kSubdivisiont;  // 緯度分割1つ分の角度
+
+	// 緯度の方向に分割　-π/2 ~ π/2
+	for (uint32_t latIndex = 0; latIndex < kSubdivisiont; ++latIndex) {
+		float lat = -float(M_PI) / 2.0f + kLatEvery * latIndex; // 現在の緯度
+
+		// 経度の方向に分割0 ~ 2π
+		for (uint32_t lonIndex = 0; lonIndex < kSubdivisiont; ++lonIndex)
+		{
+			uint32_t start = (latIndex * kSubdivisiont + lonIndex) * 6;
+			float lon = lonIndex * kLonEvery;
+
+
+		}
+	}
 }
 
 //ウィンドウプロシージャ
