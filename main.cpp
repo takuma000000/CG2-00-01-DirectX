@@ -56,10 +56,7 @@ struct VertexData {
 	Vector2 texcoord;
 };
 
-struct Sphere {
-	Vector3 center;
-	float radius;
-};
+
 
 Matrix4x4 Inverse(const Matrix4x4& m) {
 	Matrix4x4 result;
@@ -330,27 +327,6 @@ Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, float botto
 	return mat;
 }
 
-void DrawSurfaceSphere(const Sphere* sphere, Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, int color) {
-	const uint32_t kSubdivisiont = 16;  // 分割数
-
-	const float kLonEvery = 2.0f * float(M_PI) / kSubdivisiont;  // 経度分割1つ分の角度
-	const float kLatEvery = float(M_PI) / kSubdivisiont;  // 緯度分割1つ分の角度
-
-	// 緯度の方向に分割　-π/2 ~ π/2
-	for (uint32_t latIndex = 0; latIndex < kSubdivisiont; ++latIndex) {
-		float lat = -float(M_PI) / 2.0f + kLatEvery * latIndex; // 現在の緯度
-
-		// 経度の方向に分割0 ~ 2π
-		for (uint32_t lonIndex = 0; lonIndex < kSubdivisiont; ++lonIndex)
-		{
-			uint32_t start = (latIndex * kSubdivisiont + lonIndex) * 6;
-			float lon = lonIndex * kLonEvery;
-
-
-		}
-	}
-}
-
 //ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
@@ -590,7 +566,7 @@ ID3D12Resource* CreateDepthStencilTextureResource(ID3D12Device* device, int32_t 
 
 //Transform変数を作る
 Transform transform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
-Transform cameraTransform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f} ,{0.0f,0.0f,-5.0f} };
+Transform cameraTransform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f} ,{0.0f,0.0f,-10.0f} };
 Transform transformSprite{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -952,40 +928,101 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	hr = device->CreateGraphicsPipelineState(&graphicPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState));
 	assert(SUCCEEDED(hr));
 
-	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * 6);
+	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * 1536);
 
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
 	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
-	vertexBufferView.SizeInBytes = sizeof(VertexData) * 6;
+	vertexBufferView.SizeInBytes = sizeof(VertexData) * 1536;
 	vertexBufferView.StrideInBytes = sizeof(VertexData);
 
 	//頂点リソースにデータを書き込む
 	VertexData* vertexData = nullptr;
 	//書き込むためのアドレスを取得
 	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-	//左下
-	vertexData[0].position = { -0.5f,-0.5f,0.0f,1.0f };
-	vertexData[0].texcoord = { 0.0f,1.0f };
+	const uint32_t kSubdivisiont = 16;  // 分割数
 
-	//上
-	vertexData[1].position = { 0.0f,0.5f,0.0f,1.0f };
-	vertexData[1].texcoord = { 0.5f,0.0f };
+	const float kLonEvery = 2.0f * float(M_PI) / kSubdivisiont;  // 経度分割1つ分の角度
+	const float kLatEvery = float(M_PI) / kSubdivisiont;  // 緯度分割1つ分の角度
 
-	//右下
-	vertexData[2].position = { 0.5f,-0.5f,0.0f,1.0f };
-	vertexData[2].texcoord = { 1.0f,1.0f };
+	// 緯度の方向に分割　-π/2 ~ π/2
+	for (uint32_t latIndex = 0; latIndex < kSubdivisiont; ++latIndex) {
+		float lat = -float(M_PI) / 2.0f + kLatEvery * latIndex; // 現在の緯度
 
-	//左下2
-	vertexData[3].position = { -0.5f,-0.5f,0.5f,1.0f };
-	vertexData[3].texcoord = { 0.0f,1.0f };
+		// 経度の方向に分割0 ~ 2π
+		for (uint32_t lonIndex = 0; lonIndex < kSubdivisiont; ++lonIndex)
+		{
+			float v;
+			float u;
 
-	//上2
-	vertexData[4].position = { 0.0f,0.0f,0.0f,1.0f };
-	vertexData[4].texcoord = { 0.5f,0.0f };
+			u = float(lonIndex) / float(kSubdivisiont);
+			v = 1.0f - float(latIndex) / float(kSubdivisiont);
 
-	//右下2
-	vertexData[5].position = { 0.5f,-0.5f,-0.5f,1.0f };
-	vertexData[5].texcoord = { 1.0f,1.0f };
+			uint32_t start = (latIndex * kSubdivisiont + lonIndex) * 6;
+			float lon = lonIndex * kLonEvery;
+
+			//頂点にデータを入力する。基準点a
+			//a
+			vertexData[start].position.x = cos(lat) * cos(lon);
+			vertexData[start].position.y = sin(lat);
+			vertexData[start].position.z = cos(lat) * sin(lon);
+			vertexData[start].position.w = 1.0f;
+			vertexData[start].texcoord = { u,v };
+			//b
+			vertexData[start + 2].position.x = cos(lat) * cos(lon + kLonEvery);
+			vertexData[start + 2].position.y = sin(lat);
+			vertexData[start + 2].position.z = cos(lat) * sin(lon + kLonEvery);
+			vertexData[start + 2].position.w = 1.0f;
+			vertexData[start + 2].texcoord = { u + 1.0f / kSubdivisiont,v };
+			//c
+			vertexData[start + 1].position.x = cos(lat + kLatEvery) * cos(lon);
+			vertexData[start + 1].position.y = sin(lat + kLatEvery);
+			vertexData[start + 1].position.z = cos(lat + kLatEvery) * sin(lon);
+			vertexData[start + 1].position.w = 1.0f;
+			vertexData[start + 1].texcoord = { u ,v - 1.0f / kSubdivisiont };
+			//d
+			vertexData[start + 3].position.x = cos(lat + kLatEvery) * cos(lon + kLonEvery);
+			vertexData[start + 3].position.y = sin(lat + kLatEvery);
+			vertexData[start + 3].position.z = cos(lat + kLatEvery) * sin(lon + kLonEvery);
+			vertexData[start + 3].position.w = 1.0f;
+			vertexData[start + 3].texcoord = { u + 1.0f / kSubdivisiont ,v - 1.0f / kSubdivisiont };
+			//b2
+			vertexData[start + 4].position.x = cos(lat) * cos(lon + kLonEvery);
+			vertexData[start + 4].position.y = sin(lat);
+			vertexData[start + 4].position.z = cos(lat) * sin(lon + kLonEvery);
+			vertexData[start + 4].position.w = 1.0f;
+			vertexData[start + 4].texcoord = { u + 1.0f / kSubdivisiont,v };
+			//c2
+			vertexData[start + 5].position.x = cos(lat + kLatEvery) * cos(lon);
+			vertexData[start + 5].position.y = sin(lat + kLatEvery);
+			vertexData[start + 5].position.z = cos(lat + kLatEvery) * sin(lon);
+			vertexData[start + 5].position.w = 1.0f;
+			vertexData[start + 5].texcoord = { u,v - 1.0f / kSubdivisiont };
+		}
+	}
+
+	////左下
+	//vertexData[0].position = { -0.5f,-0.5f,0.0f,1.0f };
+	//vertexData[0].texcoord = { 0.0f,1.0f };
+
+	////上
+	//vertexData[1].position = { 0.0f,0.5f,0.0f,1.0f };
+	//vertexData[1].texcoord = { 0.5f,0.0f };
+
+	////右下
+	//vertexData[2].position = { 0.5f,-0.5f,0.0f,1.0f };
+	//vertexData[2].texcoord = { 1.0f,1.0f };
+
+	////左下2
+	//vertexData[3].position = { -0.5f,-0.5f,0.5f,1.0f };
+	//vertexData[3].texcoord = { 0.0f,1.0f };
+
+	////上2
+	//vertexData[4].position = { 0.0f,0.0f,0.0f,1.0f };
+	//vertexData[4].texcoord = { 0.5f,0.0f };
+
+	////右下2
+	//vertexData[5].position = { 0.5f,-0.5f,-0.5f,1.0f };
+	//vertexData[5].texcoord = { 1.0f,1.0f };
 
 	//Sprite用の頂点リソースを作る
 	ID3D12Resource* vertexResourceSprite = CreateBufferResource(device, sizeof(VertexData) * 6);
@@ -1043,8 +1080,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector4* materialData = nullptr;
 	//書き込むためのアドレスを取得
 	materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
-	//今回は赤を書き込んでみる
-	*materialData = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
+	//今回は白を書き込んでみる
+	*materialData = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 
 	//WVP用のリソースを作る。Matrix4x4 1つ分のサイズを用意する
 	ID3D12Resource* wvpResource = CreateBufferResource(device, sizeof(Matrix4x4));
@@ -1105,6 +1142,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//DSVHeapの先頭にDSVを作る
 	device->CreateDepthStencilView(depthStencilResource, &dsvDesc, dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
+
 	//出力ウィンドウへの文字出力ループを抜ける
 	Log("Hello,DirectX!\n");
 
@@ -1140,6 +1178,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			ImGui::Begin("Setting");
 			// ColorEdit3を使用して色を選択
 			ImGui::ColorEdit3("Color", &materialData->x);
+			ImGui::DragFloat3("CameraTransform", &cameraTransform.translate.x, 0.01f);
 			ImGui::End();
 			//開発用UIの処理。実際に開発用のUIを出す場合はここをゲーム固有の処理に置き換える
 			//ImGui::ShowDemoWindow();
@@ -1180,7 +1219,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			ID3D12DescriptorHeap* descriptorHeaps[] = { srvDescriptorHeap };
 			commandList->SetDescriptorHeaps(1, descriptorHeaps);
 
-			
+
 
 			//ImGuiの内部コマンドを生成する
 			ImGui::Render();
@@ -1200,7 +1239,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			//SRVのDescriptorTableの先頭を設定。2はrootParameter[2]である。
 			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 
-			commandList->DrawInstanced(6, 1, 0, 0);
+			commandList->DrawInstanced(1536, 1, 0, 0);
 
 			//Spriteの描画。変更が必要なものだけ変更する
 			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);//VBVを設定
