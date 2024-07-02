@@ -20,7 +20,7 @@ struct DirectionalLight {
     float intensity;
 };
 
-
+ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
 
 PixelShaderOutput main(VertexShaderOutput input) {
     PixelShaderOutput output;
