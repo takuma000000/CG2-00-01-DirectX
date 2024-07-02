@@ -5,7 +5,7 @@ SamplerState gSampler : register(s0);
 
 struct Material {
     float4 color;
-    int32_t enableLighting;
+    int enableLighting;
 };
 
 ConstantBuffer<Material> gMaterial : register(b0);
@@ -32,7 +32,7 @@ PixelShaderOutput main(VertexShaderOutput input) {
     //output.color = gMaterial.color * textureColor;
 
     if (gMaterial.enableLighting != 0) {
-        float cos = saturate(dot(normalize(input.normalize), -gDirectionalLight.direction));
+        float cos = saturate(dot(normalize(input.normal), -gDirectionalLight.direction));
         output.color = gMaterial.color * textureColor * gDirectionalLight.color * cos * gDirectionalLight.intensity;
     } else {
         output.color = gMaterial.color * textureColor;
