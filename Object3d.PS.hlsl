@@ -29,7 +29,14 @@ PixelShaderOutput main(VertexShaderOutput input) {
     float4 textureColor = gTexture.Sample(gSampler, input.texcoord);
 
     // ピクセルの色を計算する
-    output.color = gMaterial.color * textureColor;
+    //output.color = gMaterial.color * textureColor;
+
+    if (gMaterial.enableLighting != 0) {
+        float cos = saturate(dot(normalize(input.normalize), -gDirectionalLight.direction));
+        output.color = gMaterial.color * textureColor * gDirectionalLight.color * cos * gDirectionalLight.intensity;
+    } else {
+        output.color = gMaterial.color * textureColor;
+    }
 
     return output;
 }
