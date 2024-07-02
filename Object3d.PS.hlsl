@@ -5,6 +5,7 @@ SamplerState gSampler : register(s0);
 
 struct Material {
     float4 color;
+    int32_t 
 };
 
 ConstantBuffer<Material> gMaterial : register(b0);
