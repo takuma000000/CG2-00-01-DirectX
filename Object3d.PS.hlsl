@@ -14,6 +14,14 @@ struct PixelShaderOutput {
     float4 color : SV_TARGET0;
 };
 
+struct DirectionalLight {
+    float4 color;
+    float3 direction;
+    float intensity;
+};
+
+
+
 PixelShaderOutput main(VertexShaderOutput input) {
     PixelShaderOutput output;
 
