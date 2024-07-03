@@ -1359,15 +1359,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 			commandList->DrawInstanced(1536, 1, 0, 0);
 
-			////Spriteを常にuvCheckerにする
-			//commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+			//Spriteを常にuvCheckerにする
+			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 
-			////Spriteの描画。変更が必要なものだけ変更する
-			//commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);//VBVを設定
-			////TransformationMatrixCBufferの場所を設定
-			//commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
-			////描画
-			//commandList->DrawInstanced(6, 1, 0, 0);
+			//Spriteの描画。変更が必要なものだけ変更する
+			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);//VBVを設定
+			//TransformationMatrixCBufferの場所を設定
+			commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
+			//描画
+			commandList->DrawInstanced(6, 1, 0, 0);
 
 			//実際のcommandListのImGuiの描画コマンドを積む
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
