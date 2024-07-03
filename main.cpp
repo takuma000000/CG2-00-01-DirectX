@@ -57,7 +57,10 @@ struct VertexData {
 	Vector3 normal;
 };
 
-
+struct Material {
+	Vector4 color;
+	int32_t enableLighting;
+};
 
 Matrix4x4 Inverse(const Matrix4x4& m) {
 	Matrix4x4 result;
