@@ -12,6 +12,8 @@
 #include <math.h>
 #include <assert.h>
 #include <cmath>
+#include <fstream>
+#include <sstream>
 #include "externals/imgui/imgui.h"
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
@@ -77,6 +79,10 @@ struct DirectionalLight {
 	Vector4 color;
 	Vector3 direction;
 	float intensity;
+};
+
+struct ModelData {
+	std::vector<VertexData> vertices;
 };
 
 Matrix4x4 Inverse(const Matrix4x4& m) {
@@ -597,6 +603,74 @@ D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(ID3D12DescriptorHeap* descrip
 	return handleGPU;
 }
 
+//Objファイルを読む関数
+ModelData LoadObjFile(const std::string& directoryPath, const std::string& filename) {
+	//中で必要となる変数の宣言
+	ModelData modelData;//構築するModelData
+	std::vector<Vector4> positions;//位置
+	std::vector<Vector3> normals;//法線
+	std::vector<Vector2> texcoords;//テクスチャ座標
+	std::string line;//ファイルから読んだ一行を格納するもの
+	std::ifstream file(directoryPath + "/" + filename);//ファイルを開く
+	assert(file.is_open());//とりあえず開けなかったら止める
+
+	//ファイルを読みModelDataを構築
+	while (std::getline(file, line)) {
+		std::string identifier;
+		std::istringstream s(line);
+		s >> identifier;//先頭の識別子を読む
+
+		//identifierに応じた処理
+		if (identifier == "v") {
+			Vector4 position;
+			s >> position.x >> position.y >> position.z;
+			position.x = -1.0f;
+			position.w = 1.0f;
+			positions.push_back(position);
+		} else if (identifier == "vt") {
+			Vector2 texcoord;
+			s >> texcoord.x >> texcoord.y;
+			texcoords.push_back(texcoord);
+		} else if (identifier == "vn") {
+			Vector3 normal;
+			s >> normal.x >> normal.y >> normal.z;
+			normal.x *= -1.0f;
+			normals.push_back(normal);
+		} else if (identifier == "f") {
+			VertexData triangle[3];
+			//面は三角形限定。その他は未対応
+			for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
+				std::string vertexDefinition;
+				s >> vertexDefinition;
+				//頂点の要素へのIndexは「位置/UV/法線」で格納されているので、分散してIndexを取得する
+				std::istringstream v(vertexDefinition);
+				uint32_t elementIndices[3] = { 0, 0, 0 };
+
+				for (int32_t element = 0; element < 3; ++element) {
+					std::string index;
+					std::getline(v, index, '/');//「/区切り」でインデックスを読んでいく
+					if (!index.empty()) {
+						elementIndices[element] = std::stoi(index);
+					}
+				}
+
+				//要素へのIndexから、実際の要素の値を取得して、頂点を構築する
+				Vector4 position = positions[elementIndices[0] - 1];
+				Vector2 texcoord = texcoords[elementIndices[1] - 1];
+				Vector3 normal = normals[elementIndices[2] - 1];
+				//VertexData vertex = { position, texcoord, normal };
+				//modelData.vertices.push_back(vertex);
+				triangle[faceVertex] = { position, texcoord, normal };
+			}
+			//頂点を逆順で登録することで、回り順を逆にする
+			modelData.vertices.push_back(triangle[2]);
+			modelData.vertices.push_back(triangle[1]);
+			modelData.vertices.push_back(triangle[0]);
+		}
+	}
+	return modelData;
+}
+
 //Transform変数を作る
 Transform transform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 Transform cameraTransform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f} ,{0.0f,0.0f,-10.0f} };
@@ -888,8 +962,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;//PixelShaderで使う
 	rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRange;//Tableの中身の配列を指定
 	rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);//Tableで利用する数
-	rootParameters[3].ParameterType= D3D12_ROOT_PARAMETER_TYPE_CBV;	//CBVを使う
-	rootParameters[3].ShaderVisibility= D3D12_SHADER_VISIBILITY_PIXEL;	//PixelShaderで使う
+	rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;	//CBVを使う
+	rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;	//PixelShaderで使う
 	rootParameters[3].Descriptor.ShaderRegister = 1;//レジスタ番号1を使う
 	descriptionRootSignature.pParameters = rootParameters;	//ルートパラメータ配列へのポインタ
 	descriptionRootSignature.NumParameters = _countof(rootParameters);	//配列の長さ
@@ -981,17 +1055,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	hr = device->CreateGraphicsPipelineState(&graphicPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState));
 	assert(SUCCEEDED(hr));
 
-	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * 1536);
-
+	//モデル読み込み
+	ModelData modelData = LoadObjFile("resources", "plane.obj");
+	//頂点リソースを作る	
+	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * modelData.vertices.size());
+	//頂点バッファ―ビューを作成する
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
-	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
-	vertexBufferView.SizeInBytes = sizeof(VertexData) * 1536;
-	vertexBufferView.StrideInBytes = sizeof(VertexData);
+	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();//リソースの先頭のアドレスから使う
+	vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * modelData.vertices.size());//使用するリソースのサイズは頂点のサイズ
+	vertexBufferView.StrideInBytes = sizeof(VertexData);//1頂点当たりのサイズ
 
 	//頂点リソースにデータを書き込む
 	VertexData* vertexData = nullptr;
 	//書き込むためのアドレスを取得
 	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+	std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size());	
 	const uint32_t kSubdivisiont = 16;  // 分割数
 
 	const float kLonEvery = 2.0f * float(M_PI) / kSubdivisiont;  // 経度分割1つ分の角度
@@ -1255,7 +1333,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;//2Dテクスチャ
 	srvDesc.Texture2D.MipLevels = UINT(metadata.mipLevels);
-	
+
 
 	// SRVを作成するDescriptorHeapの場所を決める
 	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
@@ -1287,7 +1365,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//DSVHeapの先頭にDSVを作る
 	device->CreateDepthStencilView(depthStencilResource, &dsvDesc, dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-	
+
 
 	//出力ウィンドウへの文字出力ループを抜ける
 	Log("Hello,DirectX!\n");
@@ -1325,7 +1403,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			// ColorEdit3を使用して色を選択
 			//ImGui::ColorEdit3("Color", &materialData->x);
 			ImGui::DragFloat3("CameraTransform", &cameraTransform.translate.x, 0.01f);
-			ImGui::DragFloat3("cameraRotate", &cameraTransform.rotate.x, 0.01f);
+			ImGui::DragFloat3("CameraRotate", &cameraTransform.rotate.x, 0.01f);
+			ImGui::DragFloat3("SpriteRotate", &transform.rotate.x, 0.01f);
 			ImGui::Checkbox("useMonsterBall", &useMonsterBall);
 			ImGui::SliderFloat3("LightDirector", &directionalLightData->direction.x, -1.0f, 1.0f);
 			ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
@@ -1383,7 +1462,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			commandList->SetPipelineState(graphicsPipelineState);
 			commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
 			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			
+
 
 			commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
 			//wvp用のCBufferの場所を設定
@@ -1394,7 +1473,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 			commandList->SetGraphicsRootConstantBufferView(3, materialResourceLight->GetGPUVirtualAddress());
 
-			commandList->DrawInstanced(1536, 1, 0, 0);
+			commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 
 			//Spriteを常にuvCheckerにする
 			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
@@ -1403,7 +1482,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 
 			//Spriteの描画。変更が必要なものだけ変更する
-			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);//VBVを設定
+			//commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);//VBVを設定
 			//TransformationMatrixCBufferの場所を設定
 			commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
 			//描画
