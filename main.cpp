@@ -41,6 +41,10 @@ struct Vector4 {
 	float w;
 };
 
+//struct Matrix3x3 {
+//	float m[3][3];
+//};
+
 struct Matrix4x4 {
 	float m[4][4];
 };
@@ -60,6 +64,8 @@ struct VertexData {
 struct Material {
 	Vector4 color;
 	int32_t enableLighting;
+	float padding[3];
+	Matrix4x4 uvTransform;
 };
 
 struct TransformationMatrix {
@@ -595,6 +601,11 @@ D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(ID3D12DescriptorHeap* descrip
 Transform transform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 Transform cameraTransform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f} ,{0.0f,0.0f,-10.0f} };
 Transform transformSprite{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
+Transform uvTransformSprite{
+	{1.0f,1.0f,1.0f},
+	{0.0f,0.0f,0.0f},
+	{0.0f,0.0f,0.0f},
+};
 
 //SRV切り替え
 bool useMonsterBall = true;
@@ -1151,6 +1162,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//今回は白を書き込んでみる
 	materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	materialData->enableLighting = true;
+	materialData->uvTransform = MakeIdentity4x4();
 
 
 	//WVP用のリソースを作る。Matrix4x4 1つ分のサイズを用意する
@@ -1173,6 +1185,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	materialDataSprite->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	//SprightはLightingしないのでfalseを設定する
 	materialDataSprite->enableLighting = false;
+	materialDataSprite->uvTransform = MakeIdentity4x4();
+	//UVTransform用の行列
+	Matrix4x4 uvTransformMatrix = MakeScaleMatrix(uvTransformSprite.scale);
+	uvTransformMatrix = Multiply(uvTransformMatrix, MakeRotateZMatrix(uvTransformSprite.rotate.z));
+	uvTransformMatrix = Multiply(uvTransformMatrix, MakeTranslateMatrix(uvTransformSprite.translate));
+	materialDataSprite->uvTransform = uvTransformMatrix;
 
 	//Light用のマテリアルリソースを作る
 	ID3D12Resource* materialResourceLight = CreateBufferResource(device, sizeof(DirectionalLight));
@@ -1274,6 +1292,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//DSVHeapの先頭にDSVを作る
 	device->CreateDepthStencilView(depthStencilResource, &dsvDesc, dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
+	
 
 	//出力ウィンドウへの文字出力ループを抜ける
 	Log("Hello,DirectX!\n");
@@ -1314,7 +1333,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			ImGui::DragFloat3("cameraRotate", &cameraTransform.rotate.x, 0.01f);
 			ImGui::Checkbox("useMonsterBall", &useMonsterBall);
 			ImGui::SliderFloat3("LightDirector", &directionalLightData->direction.x, -1.0f, 1.0f);
-
+			ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
+			ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
+			ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
 			ImGui::End();
 			//開発用UIの処理。実際に開発用のUIを出す場合はここをゲーム固有の処理に置き換える
 			//ImGui::ShowDemoWindow();
