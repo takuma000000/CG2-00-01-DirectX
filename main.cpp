@@ -1311,6 +1311,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			// ColorEdit3を使用して色を選択
 			//ImGui::ColorEdit3("Color", &materialData->x);
 			ImGui::DragFloat3("CameraTransform", &cameraTransform.translate.x, 0.01f);
+			ImGui::DragFloat3("cameraRotate", &cameraTransform.rotate.x, 0.01f);
 			ImGui::Checkbox("useMonsterBall", &useMonsterBall);
 			ImGui::SliderFloat3("LightDirector", &directionalLightData->direction.x, -1.0f, 1.0f);
 
@@ -1454,6 +1455,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 
+	//*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+	//				解放
+	//*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 	indexResourceSprite->Release();
 	materialResourceLight->Release();
 	materialResourceSprite->Release();
