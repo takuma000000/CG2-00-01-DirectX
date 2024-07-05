@@ -12,6 +12,8 @@
 #include <math.h>
 #include <assert.h>
 #include <cmath>
+#include <fstream>
+#include <sstream>
 #include "externals/imgui/imgui.h"
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
@@ -77,6 +79,10 @@ struct DirectionalLight {
 	Vector4 color;
 	Vector3 direction;
 	float intensity;
+};
+
+struct ModelData {
+	std::vector<VertexData> vertices;
 };
 
 Matrix4x4 Inverse(const Matrix4x4& m) {
@@ -595,6 +601,38 @@ D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(ID3D12DescriptorHeap* descrip
 	D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
 	handleGPU.ptr += (descriptorSize * index);
 	return handleGPU;
+}
+
+ModelData LoadObjFile(const std::string& directoryPath, const std::string& filename) {
+	//必要となる変数の宣言
+	ModelData modelData;//構築するモデルデータ
+	std::vector<Vector4> positions;//位置
+	std::vector<Vector3> normals;//法線
+	std::vector<Vector2> texcoords;//テクスチャ座標
+	std::string line;//ファイルから読んだ一行を格納するもの
+	std::ifstream file(directoryPath + "/" + filename);//ファイルを開く
+	assert(file.is_open());//とりあえず開けなかったら止める
+	while (std::getline(file, line)) {
+		std::string identifier;
+		std::istringstream s(line);
+		s >> identifier;//先頭の識別子を読む
+
+		//identifierに応じた処理
+		if (identifier == "v") {
+			Vector4 position;
+			s >> position.x >> position.y >> position.z;
+			position.w = 1.0f;
+			positions.push_back(position);
+		} else if (identifier == "vt") {
+			Vector2 texcoord;
+			s >> texcoord.x >> texcoord.y;
+			texcoords.push_back(texcoord);
+		} else if (identifier == "vn") {
+			Vector3 normal;
+			s >> normal.x >> normal.y >> normal.z;
+			normals.push_back(normal);
+		}else if()
+	}
 }
 
 //Transform変数を作る
