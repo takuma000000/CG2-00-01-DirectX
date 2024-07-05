@@ -624,7 +624,7 @@ ModelData LoadObjFile(const std::string& directoryPath, const std::string& filen
 		if (identifier == "v") {
 			Vector4 position;
 			s >> position.x >> position.y >> position.z;
-			position.x = -1.0f;
+			//position.x = -1.0f;
 			position.w = 1.0f;
 			positions.push_back(position);
 		} else if (identifier == "vt") {
@@ -634,10 +634,10 @@ ModelData LoadObjFile(const std::string& directoryPath, const std::string& filen
 		} else if (identifier == "vn") {
 			Vector3 normal;
 			s >> normal.x >> normal.y >> normal.z;
-			normal.x *= -1.0f;
+			//normal.x *= -1.0f;
 			normals.push_back(normal);
 		} else if (identifier == "f") {
-			VertexData triangle[3];
+			//VertexData triangle[3];
 			//面は三角形限定。その他は未対応
 			for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
 				std::string vertexDefinition;
@@ -658,14 +658,14 @@ ModelData LoadObjFile(const std::string& directoryPath, const std::string& filen
 				Vector4 position = positions[elementIndices[0] - 1];
 				Vector2 texcoord = texcoords[elementIndices[1] - 1];
 				Vector3 normal = normals[elementIndices[2] - 1];
-				//VertexData vertex = { position, texcoord, normal };
-				//modelData.vertices.push_back(vertex);
-				triangle[faceVertex] = { position, texcoord, normal };
+				VertexData vertex = { position, texcoord, normal };
+				modelData.vertices.push_back(vertex);
+				//triangle[faceVertex] = { position, texcoord, normal };
 			}
 			//頂点を逆順で登録することで、回り順を逆にする
-			modelData.vertices.push_back(triangle[2]);
+			/*modelData.vertices.push_back(triangle[2]);
 			modelData.vertices.push_back(triangle[1]);
-			modelData.vertices.push_back(triangle[0]);
+			modelData.vertices.push_back(triangle[0]);*/
 		}
 	}
 	return modelData;
